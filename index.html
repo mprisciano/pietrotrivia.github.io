@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivia Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .progress {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .question-container {
+            margin-bottom: 30px;
+        }
+
+        .question {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .letter-boxes {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .letter-box {
+            width: 45px;
+            height: 55px;
+            font-size: 24px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .letter-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .letter-box.prefilled {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border-color: #90caf9;
+        }
+
+        .letter-box.correct {
+            border-color: #4caf50;
+            background-color: #e8f5e9;
+            animation: correct-pulse 0.5s;
+        }
+
+        .letter-box.incorrect {
+            border-color: #f44336;
+            background-color: #ffebee;
+            animation: shake 0.5s;
+        }
+
+        @keyframes correct-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .feedback {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 16px;
+            min-height: 24px;
+            font-weight: 500;
+        }
+
+        .feedback.correct {
+            color: #4caf50;
+        }
+
+        .feedback.incorrect {
+            color: #f44336;
+        }
+
+        .check-button {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 40px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .check-button:hover {
+            background: #5568d3;
+        }
+
+        .check-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .celebration {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .celebration.active {
+            display: flex;
+        }
+
+        .celebration-content {
+            text-align: center;
+            color: white;
+        }
+
+        .celebration-content h2 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #f44336;
+            position: absolute;
+            animation: confetti-fall 3s linear infinite;
+        }
+
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎯 Pietro Trivia Quizzone</h1>
+    <div class="progress">Domandona <span id="current">1</span> di <span id="total">5</span></div>
+
+    <div id="quiz-container"></div>
+</div>
+
+<div class="celebration" id="celebration">
+    <div class="celebration-content">
+        <h2>🎉 Bravo Dr. Pietro! 🎉</h2>
+        <p style="font-size: 24px;">You've completed the quiz!</p>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            question: "Personaggio che ti traghetta nelle acque del Salento",
+            answer: "CARONTE",
+            prefilled: [false, true, false, false, false, true, false]
+        },
+        {
+            question: "Si fa a capodanno in una struttura con Jigen che fa servizio camera gratis",
+            answer: "FESTEGGGIARE",
+            prefilled: [false, true, false, false, true, false, false, false, true, false, false]
+        },
+        {
+            question: "Ci vai d'estate con le migliori intenzioni per poi uscirne distrutto ogni santa volta",
+            answer: "FICODINDIA",
+            prefilled: [false, false, true, false, false, false, false, false, true, false, false, false]
+        },
+        {
+            question: "Mete sul set che stesira ghe..?",
+            answer: "PIOVANI",
+            prefilled: [false, false, true, false, false, false, true]
+        },
+        {
+            question: "Be, sciamu a..?",
+            answer: "LEUCA",
+            prefilled: [false, false, true, false, true]
+        },
+        {
+            question: "La via in cui ogni giorno dalle 6:30 alle 8:30 si scatena il putiferio",
+            answer: "VIALE SARCA",
+            prefilled: [false, false, true, false, false, false, false, true, false, false, true]
+        },
+        {
+            question: "L'hai (ri)presa recentemente (e non è la laurea)",
+            answer: "PATENTE",
+            prefilled: [false, true, false, false, true, false, false]
+        },
+        {
+            question: "Suo nonno fu la storica voce del porco di D** di Mickey Mouse",
+            answer: "CONTE CAUDULLO",
+            prefilled: [false, false, true, false, false, false, true, false, false, false, false, true, false, false]
+        },
+        {
+            question: "Li fai quando i soldi non ce li hai",
+            answer: "CASTELLETTI",
+            prefilled: [false, false, true, false, true, false, false, false, false, false, true]
+        },
+        {
+            question: "Lo storico fornitore di Salute Store",
+            answer: "UFUK",
+            prefilled: [false, true, false, false]
+        },
+        {
+            question: "Fanno bene al corpo, alla pelle ma non alla reputazione di Salute Store con i clienti",
+            answer: "OILI",
+            prefilled: [false, false, true, false]
+        },
+        {
+            question: "Te lo dice il contatto quando dai troppo fiato alla gola",
+            answer: "NO PARLA TANTO FRA",
+            prefilled: [false, false, false, false, true, false, false, false, false, false, true, false, false, false, false, false, true, false]
+        }
+    ];
+
+    let currentQuestion = 0;
+    const quizContainer = document.getElementById('quiz-container');
+    const currentSpan = document.getElementById('current');
+    const totalSpan = document.getElementById('total');
+    const celebration = document.getElementById('celebration');
+
+    totalSpan.textContent = questions.length;
+
+    function normalizeAnswer(text) {
+        return text.toUpperCase().replace(/[^A-Z]/g, '');
+    }
+
+    function createQuestionElement(q, index) {
+        const div = document.createElement('div');
+        div.className = 'question-container';
+
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question';
+        questionDiv.textContent = `${index + 1}. ${q.question}`;
+        div.appendChild(questionDiv);
+
+        const letterBoxesDiv = document.createElement('div');
+        letterBoxesDiv.className = 'letter-boxes';
+
+        const answerChars = q.answer.split('');
+
+        answerChars.forEach((char, i) => {
+            if (char === ' ' || char === "'") {
+                const spacer = document.createElement('div');
+                spacer.style.width = char === ' ' ? '15px' : '5px';
+                letterBoxesDiv.appendChild(spacer);
+                return;
+            }
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'letter-box';
+            input.maxLength = 1;
+            input.dataset.index = i;
+            input.dataset.correct = char;
+
+            if (q.prefilled[i]) {
+                input.value = char;
+                input.disabled = true;
+                input.classList.add('prefilled');
+            } else {
+                input.addEventListener('input', (e) => handleInput(e, index));
+                input.addEventListener('keydown', (e) => handleKeyDown(e, index));
+            }
+
+            letterBoxesDiv.appendChild(input);
+        });
+
+        div.appendChild(letterBoxesDiv);
+
+        const feedback = document.createElement('div');
+        feedback.className = 'feedback';
+        feedback.id = `feedback-${index}`;
+        div.appendChild(feedback);
+
+        const checkButton = document.createElement('button');
+        checkButton.className = 'check-button';
+        checkButton.textContent = 'Controlla Porcod**io';
+        checkButton.onclick = () => checkAnswer(index);
+        div.appendChild(checkButton);
+
+        return div;
+    }
+
+    function handleInput(e, questionIndex) {
+        const input = e.target;
+        input.value = input.value.toUpperCase();
+
+        if (input.value && input.nextElementSibling && !input.nextElementSibling.disabled) {
+            input.nextElementSibling.focus();
+        }
+    }
+
+    function handleKeyDown(e, questionIndex) {
+        const input = e.target;
+
+        if (e.key === 'Backspace' && !input.value) {
+            let prev = input.previousElementSibling;
+            while (prev && prev.disabled) {
+                prev = prev.previousElementSibling;
+            }
+            if (prev) prev.focus();
+        } else if (e.key === 'Enter') {
+            checkAnswer(questionIndex);
+        }
+    }
+
+    function renderQuestion() {
+        quizContainer.innerHTML = '';
+        const questionEl = createQuestionElement(questions[currentQuestion], currentQuestion);
+        quizContainer.appendChild(questionEl);
+
+        const firstInput = questionEl.querySelector('.letter-box:not(.prefilled)');
+        if (firstInput) firstInput.focus();
+    }
+
+    function checkAnswer(index) {
+        const letterBoxes = document.querySelectorAll('.letter-box');
+        const feedback = document.getElementById(`feedback-${index}`);
+        let allCorrect = true;
+
+        letterBoxes.forEach(box => {
+            if (!box.disabled) {
+                const userLetter = box.value.toUpperCase();
+                const correctLetter = box.dataset.correct;
+
+                if (userLetter === correctLetter) {
+                    box.classList.remove('incorrect');
+                    box.classList.add('correct');
+                } else {
+                    box.classList.remove('correct');
+                    box.classList.add('incorrect');
+                    allCorrect = false;
+                }
+            }
+        });
+
+        if (allCorrect) {
+            feedback.textContent = '✓ Bravo!';
+            feedback.className = 'feedback correct';
+
+            letterBoxes.forEach(box => box.disabled = true);
+            document.querySelector('.check-button').disabled = true;
+
+            setTimeout(() => {
+                currentQuestion++;
+                currentSpan.textContent = currentQuestion + 1;
+
+                if (currentQuestion < questions.length) {
+                    renderQuestion();
+                } else {
+                    showCelebration();
+                }
+            }, 1500);
+        } else {
+            feedback.textContent = '✗ Try again!';
+            feedback.className = 'feedback incorrect';
+
+            setTimeout(() => {
+                letterBoxes.forEach(box => {
+                    if (!box.disabled) {
+                        box.classList.remove('incorrect');
+                    }
+                });
+                feedback.textContent = '';
+            }, 1500);
+        }
+    }
+
+    function showCelebration() {
+        celebration.classList.add('active');
+        createConfetti();
+    }
+
+    function createConfetti() {
+        const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#00bcd4', '#009688', '#4caf50', '#ffeb3b', '#ff9800', '#ff5722'];
+
+        for (let i = 0; i < 100; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 3 + 's';
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                celebration.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 5000);
+            }, i * 30);
+        }
+    }
+
+    renderQuestion();
+</script>
+</body>
+</html>
